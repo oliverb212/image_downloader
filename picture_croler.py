@@ -8,7 +8,7 @@ try:
     raw_url = sys.argv[1]
     path = sys.argv[2]
     savename = sys.argv[3]
-    threds = sys.argv[4]
+    #threds = sys.argv[4]
 except:
     raw_url = None
     path = None
@@ -18,6 +18,7 @@ except:
 url = []
 imgurl = []
 pixiv_list = []
+source_list = []
 plist_count = 0
 
 complited_files = 0
@@ -216,8 +217,17 @@ class main():
             return x
 
     def getgalimg(self,url):
+        global source_list
         r = requests.get(url)
         x = str(r.content)
+
+        #소스 출력, 이거를 txt로 저장
+        get_source_start = x.find("Source: <a href=\"")
+        get_source_end = x.find("\" rel=\"")
+        get_source = x[get_source_start+17:get_source_end]
+        source_list.append(get_source)
+        print("\n"+get_source)
+
 
         first = x.find("<picture>")
         last = x.find("</picture>",first)
@@ -272,6 +282,7 @@ class main():
         global raw_url
         global path
         global savename
+        global source_list
         
         if raw_url == None:
             while True:
@@ -280,11 +291,16 @@ class main():
                     break
         if path == None:
             path = input("save path : ")
+            if path != os.path.dirname(path):
+                os.mkdir(path.replace("/", ""))
+            if path != path.find("/", len(path)-1):
+                path = path+"/"
         if savename == None:
             savename = input("save name : ")
+        '''
         if threds == None:
             threds = input("threds (defalt:3) : ")
-        
+        '''
 
 
         os.makedirs(path+"/"+savename, exist_ok=True)
@@ -300,6 +316,11 @@ class main():
 
             if "https://gelbooru.com/" in url[i]:
                 imgurl.append(self.getgalimg(url[i]))
+
+            
+        with open(f"{path}/{savename}/source.txt", "w", encoding="utf8") as f:
+            for i in range(len(source_list)):
+                f.write(f"{source_list[i]}\n")
 
         asyncio.run(self.sync_download())
         print("done!")
