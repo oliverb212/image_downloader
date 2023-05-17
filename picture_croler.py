@@ -61,9 +61,12 @@ gal_headers = [
     ('upgrade-insecure-requests', '1'),
     ('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'),
 ]   
-
+#전체적인 실행방식
+#URL, 저장위치, 스레드, 이름을 지정하고, 지정한 폴더내에 사진들과 소스를 저장한다.
+#수정사항: URL 가공, 다운로드 스레드 지정
 
 class main():
+
     async def download(self,path,name,url,i,taskid,start_num):
         num = start_num
         global complited_files
@@ -113,6 +116,18 @@ class main():
                         req.urlretrieve(url[i], spath_none+".png")
                         print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
         num = num + 1
+
+    async def sync_download_new(self):
+        global imgurl
+        lefted = None
+        sync_url = []
+
+        thread_to_url_amt = (len(imgurl)/threds)
+        if len(imgurl) % threds == 0:
+            for i in range(threds):
+                for q in range(thread_to_url_amt):
+                    sync_url[i][q] = imgurl[q+(len(threds)*i)]
+        
 
 
     async def sync_download(self):
