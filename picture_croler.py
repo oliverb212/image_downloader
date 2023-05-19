@@ -3,6 +3,7 @@ import sys
 import os
 import urllib.request as req
 import asyncio
+import numpy as np
 
 try:
     raw_url = sys.argv[1]
@@ -13,7 +14,7 @@ except:
     raw_url = None
     path = None
     savename = None
-    threds = 3
+    thread = 3
 
 url = []
 imgurl = []
@@ -117,18 +118,30 @@ class main():
                         print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
         num = num + 1
 
-    async def sync_download_new(self):
+#work in progress**********************************
+
+    async def sync_download_new(self,thread):
         global imgurl
-        lefted = None
-        sync_url = []
 
-        thread_to_url_amt = (len(imgurl)/threds)
-        if len(imgurl) % threds == 0:
-            for i in range(threds):
-                for q in range(thread_to_url_amt):
-                    sync_url[i][q] = imgurl[q+(len(threds)*i)]
+        #np.array를 사용해서 스레드 수만큼 URL을 나누고, 만약 남는 URL이 있다면 그 URL는 따로 뺴둔 상태로 지정후 뒤에서부터 추가
+        if len(imgurl)%thread == 0:
+            sync_url = np.array(imgurl).reshape((thread, int(len(imgurl)/thread)))
+            sync_url = sync_url.tolist()
+        else:
+            temp = []
+            for i in range(len(imgurl)%thread):
+                temp.append(imgurl.pop()) #남는 URL 빼두는 과정
+            sync_url = np.array(imgurl).reshape((thread, int(len(imgurl)/thread)))
+            sync_url = sync_url.tolist()
+            for i in range(len(temp)):
+                sync_url[thread-(i+1)].append(temp.pop()) #남는 URL 추가.
+
         
+            
+    
 
+        
+#work in progress**********************************
 
     async def sync_download(self):
         global imgurl
@@ -240,8 +253,11 @@ class main():
         get_source_start = x.find("Source: <a href=\"")
         get_source_end = x.find("\" rel=\"")
         get_source = x[get_source_start+17:get_source_end]
-        source_list.append(get_source)
-        print("\n"+get_source)
+        if (get_source.find("https://") > 1) | (get_source.find("http://") > 1):
+            print("\nSomething went wrong..... log:\n***************************************\n"+get_source+"\n************************************\n") 
+        else:
+            print("\n"+get_source)
+            source_list.append(get_source)
 
 
         first = x.find("<picture>")
@@ -306,7 +322,9 @@ class main():
                     break
         if path == None:
             path = input("save path : ")
-            if path != os.path.dirname(path):
+            if path != path.endswith("/"):
+                path += "/"
+            if os.path.isdir(path) == False:
                 os.mkdir(path.replace("/", ""))
             if path != path.find("/", len(path)-1):
                 path = path+"/"
