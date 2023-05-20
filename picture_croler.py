@@ -68,6 +68,61 @@ gal_headers = [
 
 class main():
 
+    async def download_new(self,path,name,url,axis,row,taskid,start_num):
+        num = start_num
+        global complited_files
+        
+        spath_png = str(path+"/"+name+"/"+name+f" ({num+1})"+".png").replace("//" , "/")
+        spath_jpg = str(path+"/"+name+"/"+name+f" ({num+1})"+".jpg").replace("//" , "/")
+        spath_none = str(path+"/"+name+"/"+name+f" ({num+1})").replace("//" , "/")
+        
+        for i in range(len(url[axis][row])):
+            if "https://cdn.donmai.us" in url[axis][row]:
+                try:
+                    req.urlretrieve(url[axis][row], spath_jpg)
+                    print(f"Downloaded image from task{taskid} : {spath_jpg}")
+                except:
+                    x = url[axis][row].replace(".jpg", ".png")
+                    req.urlretrieve(x, spath_png)
+                    print(f"Downloaded image from task{taskid} : {spath_png}")
+            if "https://i.pximg.net" in url[axis][row]:
+                try:
+                    opener = req.build_opener()
+                    opener.addheaders = pixiv_headers
+                    req.install_opener(opener)
+                    req.urlretrieve(url[axis][row], spath_jpg)
+                    print(f"Downloaded image from task{taskid} : {spath_jpg}")
+                except:
+                    x = url[axis][row].replace(".jpg", ".png")
+                    opener = req.build_opener()
+                    opener.addheaders = pixiv_headers
+                    req.install_opener(opener)
+                    req.urlretrieve(x, spath_png)
+                    print(f"Downloaded image from task{taskid} : {spath_png}")
+            if "https://img3.gelbooru.com/" in url[axis][row]:
+                    opener = req.build_opener()
+                    opener.addheaders = gal_headers
+                    req.install_opener(opener)
+                    first = url[axis][row].find(".jpg")
+                    try:
+                        req.urlretrieve(url[axis][row], spath_jpg)
+                        print(f"Downloaded image from task{taskid} : {spath_jpg}")
+                    except:
+                        try:
+                            url[axis][row] = url[axis][row][0:first]+".jpeg"
+                            req.urlretrieve(url[axis][row], spath_none+".jpeg")
+                            print(f"Downloaded image from task{taskid} : {spath_none}"+".jpeg")
+                        except:
+                            
+                            url[axis][row] = url[axis][row][0:first]+".png"
+                            req.urlretrieve(url[axis][row], spath_none+".png")
+                            print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
+            num = num + 1
+
+
+
+        
+
     async def download(self,path,name,url,i,taskid,start_num):
         num = start_num
         global complited_files
@@ -135,7 +190,16 @@ class main():
             sync_url = sync_url.tolist()
             for i in range(len(temp)):
                 sync_url[thread-(i+1)].append(temp.pop()) #남는 URL 추가.
+            
+            #다운로드 시작
+            print("\n\n################ download start! ################")
 
+            #download_new(self,path,name,url,axis,row,taskid,start_num)
+            task = []
+            for i in range(len(thread)):
+                task.append(asyncio.create_task(self.download_new(path, savename, sync_url, i, i, 0+i)))
+
+            await asyncio.gather(*task)
         
             
     
@@ -185,8 +249,10 @@ class main():
         
 
             print("\n\n################ download start! ################")
-
-            for i in range(amount):
+            
+            task = []
+            for i in range(amount):    
+                
                 task1 = asyncio.create_task(self.download(path, savename, sync_url_1, i, '1', 0+i))
                 task2 = asyncio.create_task(self.download(path, savename, sync_url_2, i, '2', len(sync_url_2)+i))
                 task3 = asyncio.create_task(self.download(path, savename, sync_url_3, i, '3', len(sync_url_2)*2+i))
