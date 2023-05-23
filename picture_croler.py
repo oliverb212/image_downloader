@@ -75,7 +75,7 @@ class main():
         spath_png = str(path+"/"+name+"/"+name+f" ({num+1})"+".png").replace("//" , "/")
         spath_jpg = str(path+"/"+name+"/"+name+f" ({num+1})"+".jpg").replace("//" , "/")
         spath_none = str(path+"/"+name+"/"+name+f" ({num+1})").replace("//" , "/")
-        
+        #수정: len 할때 row가 필요한가?
         for i in range(len(url[axis][row])):
             if "https://cdn.donmai.us" in url[axis][row]:
                 try:
