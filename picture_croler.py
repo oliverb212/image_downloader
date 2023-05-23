@@ -9,12 +9,12 @@ try:
     raw_url = sys.argv[1]
     path = sys.argv[2]
     savename = sys.argv[3]
-    #threds = sys.argv[4]
+    threds = sys.argv[4]
 except:
     raw_url = None
     path = None
     savename = None
-    thread = 3
+    thread = None
 
 url = []
 imgurl = []
@@ -64,23 +64,20 @@ gal_headers = [
 ]   
 #전체적인 실행방식
 #URL, 저장위치, 스레드, 이름을 지정하고, 지정한 폴더내에 사진들과 소스를 저장한다.
-#수정사항: URL 가공, 다운로드 스레드 지정
+#수정사항: URL 가공과 스레트방식 추가 -작업착수, 다운로드 스레드 지정 -완료
 
 class main():
 
-    async def download_new(self,path,name,url,axis,row,taskid,start_num):
-        num = start_num
-        global complited_files
-        
-        spath_png = str(path+"/"+name+"/"+name+f" ({num+1})"+".png").replace("//" , "/")
-        spath_jpg = str(path+"/"+name+"/"+name+f" ({num+1})"+".jpg").replace("//" , "/")
-        spath_none = str(path+"/"+name+"/"+name+f" ({num+1})").replace("//" , "/")
+    async def download(self,path,name,url,axis,num_sync,taskid):
+        num = 0 #일러스트 번호
+        row = 0 #리스트 열
 
-        #수정: len 할때 row가 필요한가?
-        #for row in range(len(url[axis])):
-        #    if //url// in url[axis][row]:
+        for i in range(len(url[axis])):
+            spath_png = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".png").replace("//" , "/")
+            spath_jpg = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".jpg").replace("//" , "/")
+            spath_none = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})").replace("//" , "/")
+            #데이터 저장 프리셋
 
-        for i in range(len(url[axis][row])):
             if "https://cdn.donmai.us" in url[axis][row]:
                 try:
                     req.urlretrieve(url[axis][row], spath_jpg)
@@ -89,24 +86,24 @@ class main():
                     x = url[axis][row].replace(".jpg", ".png")
                     req.urlretrieve(x, spath_png)
                     print(f"Downloaded image from task{taskid} : {spath_png}")
-            if "https://i.pximg.net" in url[axis][row]:
+            if "https://i.pximg.net" in url[axis][row]: #픽시브 일러스트 리스트쪽에 문제있음. 고처야함
                 try:
                     opener = req.build_opener()
                     opener.addheaders = pixiv_headers
-                    req.install_opener(opener)
+                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
                     req.urlretrieve(url[axis][row], spath_jpg)
                     print(f"Downloaded image from task{taskid} : {spath_jpg}")
                 except:
                     x = url[axis][row].replace(".jpg", ".png")
                     opener = req.build_opener()
                     opener.addheaders = pixiv_headers
-                    req.install_opener(opener)
+                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
                     req.urlretrieve(x, spath_png)
                     print(f"Downloaded image from task{taskid} : {spath_png}")
             if "https://img3.gelbooru.com/" in url[axis][row]:
                     opener = req.build_opener()
                     opener.addheaders = gal_headers
-                    req.install_opener(opener)
+                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
                     first = url[axis][row].find(".jpg")
                     try:
                         req.urlretrieve(url[axis][row], spath_jpg)
@@ -122,64 +119,10 @@ class main():
                             req.urlretrieve(url[axis][row], spath_none+".png")
                             print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
             num = num + 1
+            row += 1
+            await asyncio.sleep(0.1)
 
-
-
-        
-
-    async def download(self,path,name,url,i,taskid,start_num):
-        num = start_num
-        global complited_files
-        
-        spath_png = str(path+"/"+name+"/"+name+f" ({num+1})"+".png").replace("//" , "/")
-        spath_jpg = str(path+"/"+name+"/"+name+f" ({num+1})"+".jpg").replace("//" , "/")
-        spath_none = str(path+"/"+name+"/"+name+f" ({num+1})").replace("//" , "/")
-        
-        if "https://cdn.donmai.us" in url[i]:
-            try:
-                req.urlretrieve(url[i], spath_jpg)
-                print(f"Downloaded image from task{taskid} : {spath_jpg}")
-            except:
-                x = url[i].replace(".jpg", ".png")
-                req.urlretrieve(x, spath_png)
-                print(f"Downloaded image from task{taskid} : {spath_png}")
-        if "https://i.pximg.net" in url[i]:
-            try:
-                opener = req.build_opener()
-                opener.addheaders = pixiv_headers
-                req.install_opener(opener)
-                req.urlretrieve(url[i], spath_jpg)
-                print(f"Downloaded image from task{taskid} : {spath_jpg}")
-            except:
-                x = url[i].replace(".jpg", ".png")
-                opener = req.build_opener()
-                opener.addheaders = pixiv_headers
-                req.install_opener(opener)
-                req.urlretrieve(x, spath_png)
-                print(f"Downloaded image from task{taskid} : {spath_png}")
-        if "https://img3.gelbooru.com/" in url[i]:
-                opener = req.build_opener()
-                opener.addheaders = gal_headers
-                req.install_opener(opener)
-                first = url[i].find(".jpg")
-                try:
-                    req.urlretrieve(url[i], spath_jpg)
-                    print(f"Downloaded image from task{taskid} : {spath_jpg}")
-                except:
-                    try:
-                        url[i] = url[i][0:first]+".jpeg"
-                        req.urlretrieve(url[i], spath_none+".jpeg")
-                        print(f"Downloaded image from task{taskid} : {spath_none}"+".jpeg")
-                    except:
-                        
-                        url[i] = url[i][0:first]+".png"
-                        req.urlretrieve(url[i], spath_none+".png")
-                        print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
-        num = num + 1
-
-#work in progress**********************************
-
-    async def sync_download_new(self,thread):
+    async def sync_download(self,thread):
         global imgurl
 
         #np.array를 사용해서 스레드 수만큼 URL을 나누고, 만약 남는 URL이 있다면 그 URL는 따로 뺴둔 상태로 지정후 뒤에서부터 추가
@@ -198,80 +141,13 @@ class main():
             #다운로드 시작
             print("\n\n################ download start! ################")
 
-            #download_new(self,path,name,url,axis,row,taskid,start_num)
+            #download_new(self,path,name,url,axis,thread,taskid)
             task = []
-            for i in range(len(thread)):
-                task.append(asyncio.create_task(self.download_new(path, savename, sync_url, i, i, 0+i)))
+            for i in range(thread):
+                task.append(asyncio.create_task(self.download(path, savename, sync_url, i, len(sync_url[0]), 0+i)))
 
             await asyncio.gather(*task)
         
-            
-    
-
-        
-#work in progress**********************************
-
-    async def sync_download(self):
-        global imgurl
-        lefted = None
-
-        if len(imgurl) >= 3:
-            if len(imgurl) % 3 == 0:
-
-                url_length = len(imgurl)
-                amount = int(url_length / 3)
-                sync_url_1 = []
-                sync_url_2 = []
-                sync_url_3 = []
-
-                for i in range(int(url_length / 3)):
-                    sync_url_1.append(imgurl[i])
-
-                for i in range(int(url_length / 3)):
-                    sync_url_2.append(imgurl[i+int(url_length / 3)])
-
-                for i in range(int((url_length / 3))):
-                    sync_url_3.append(imgurl[i+int(url_length / 3)*2])
-
-            else:
-                lefted = len(imgurl) % 3
-                url_length = len(imgurl) - lefted
-                amount = int(url_length / 3)
-                sync_url_1 = []
-                sync_url_2 = []
-                sync_url_3 = []
-
-                for i in range(int(url_length / 3)):
-                    sync_url_1.append(imgurl[i])
-
-                for i in range(int(url_length / 3)):
-                    sync_url_2.append(imgurl[i+int(url_length / 3)])
-
-                for i in range(int((url_length / 3)+lefted)):
-                    sync_url_3.append(imgurl[i+int(url_length / 3)*2])
-
-        
-
-            print("\n\n################ download start! ################")
-            
-            task = []
-            for i in range(amount):    
-                
-                task1 = asyncio.create_task(self.download(path, savename, sync_url_1, i, '1', 0+i))
-                task2 = asyncio.create_task(self.download(path, savename, sync_url_2, i, '2', len(sync_url_2)+i))
-                task3 = asyncio.create_task(self.download(path, savename, sync_url_3, i, '3', len(sync_url_2)*2+i))
-
-                await asyncio.gather(task1,task2,task3)
-            if lefted != None:
-                for i in range((len(sync_url_3)-amount)):
-                    task3 = asyncio.create_task(self.download(path, savename, sync_url_3, i, '3', len(sync_url_2)*3))
-                    await task3
-
-        else:
-            print("\n\n################ download start! ################")
-            task1 = asyncio.create_task(self.download(path, savename, imgurl, 0))
-            await task1
-
     def getdanimg(self,url):
         r = requests.get(url)
         cont = str(r.content)
@@ -383,12 +259,13 @@ class main():
         global raw_url
         global path
         global savename
+        global thread
         global source_list
         
         if raw_url == None:
             while True:
                 raw_url = input("url txt path : ")
-                if ".txt" in raw_url:
+                if raw_url.endswith(".txt") == True:
                     break
         if path == None:
             path = input("save path : ")
@@ -400,10 +277,8 @@ class main():
                 path = path+"/"
         if savename == None:
             savename = input("save name : ")
-        '''
-        if threds == None:
-            threds = input("threds (defalt:3) : ")
-        '''
+        if thread == None:
+            thread = int(input("threds (defalt:3) : "))
 
 
         os.makedirs(path+"/"+savename, exist_ok=True)
@@ -425,7 +300,7 @@ class main():
             for i in range(len(source_list)):
                 f.write(f"{source_list[i]}\n")
 
-        asyncio.run(self.sync_download())
+        asyncio.run(self.sync_download(thread))
         print("done!")
             
 main()
