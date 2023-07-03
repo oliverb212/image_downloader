@@ -3,6 +3,7 @@ import sys
 import os
 import urllib.request as req
 import asyncio
+import threading
 import numpy as np
 
 try:
@@ -68,7 +69,7 @@ gal_headers = [
 
 class main():
 
-    async def download(self,path,name,url,axis,num_sync,taskid):
+    def download(self,path,name,url,axis,num_sync,taskid):
         num = 0 #일러스트 번호
         row = 0 #리스트 열
 
@@ -76,7 +77,7 @@ class main():
             spath_png = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".png").replace("//" , "/")
             spath_jpg = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".jpg").replace("//" , "/")
             spath_none = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})").replace("//" , "/")
-            #데이터 저장 프리셋
+            #이미지 확장자 프리셋
 
             if "https://cdn.donmai.us" in url[axis][row]:
                 try:
@@ -120,9 +121,9 @@ class main():
                             print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
             num = num + 1
             row += 1
-            await asyncio.sleep(0.1)
+            #await asyncio.sleep(0.1)
 
-    async def sync_download(self,thread):
+    def sync_download(self,thread):
         global imgurl
 
         #np.array를 사용해서 스레드 수만큼 URL을 나누고, 만약 남는 URL이 있다면 그 URL는 따로 뺴둔 상태로 지정후 뒤에서부터 추가
@@ -144,9 +145,8 @@ class main():
             #download_new(self,path,name,url,axis,thread,taskid)
             task = []
             for i in range(thread):
-                task.append(asyncio.create_task(self.download(path, savename, sync_url, i, len(sync_url[0]), 0+i)))
-
-            await asyncio.gather(*task)
+                task.append(threading.Thread(target=self.download, args=(path, savename, sync_url, i, len(sync_url[0]), 0+i)))
+                task[i].start()
         
     def getdanimg(self,url):
         r = requests.get(url)
@@ -300,7 +300,11 @@ class main():
             for i in range(len(source_list)):
                 f.write(f"{source_list[i]}\n")
 
-        asyncio.run(self.sync_download(thread))
-        print("done!")
+        t = threading.Thread(target=self.sync_download, args=(thread,))
+        t.start()
+        while True:
+            if t.is_alive() == False:
+                print("done!")
+                break
             
 main()
