@@ -66,6 +66,8 @@ gal_headers = [
 #전체적인 실행방식
 #URL, 저장위치, 스레드, 이름을 지정하고, 지정한 폴더내에 사진들과 소스를 저장한다.
 #수정사항: URL 가공과 스레트방식 추가 -작업착수, 다운로드 스레드 지정 -완료
+#추가사항: 허깅페이스같이 클라우드 컴퓨터를 지원하는곳에서 이미지를 다운받고, 컴퓨터로 브내는 과정, 공공 IP에서 막히는것을 뚫기 위한 방법
+#유의사항 : 학교나 공공 네트워크에서는 작동 안할수도 있음, 이미지 서버가 따로있다면 가능할지도?
 
 class main():
 
@@ -154,8 +156,7 @@ class main():
         first = cont.find("image-container")
         first = cont.find("<picture>",first)
         last = cont.find("</picture>",first)
-        cont = cont[first:last]
-        first = cont.find("src=")
+        first = cont.find("src=", first)
         last = cont.find("\">\\n", first)
         cont = cont[first:last]
         cont = cont.replace("src=\"","")
@@ -195,16 +196,7 @@ class main():
         r = requests.get(url)
         x = str(r.content)
 
-        #소스 출력, 이거를 txt로 저장
-        get_source_start = x.find("Source: <a href=\"")
-        get_source_end = x.find("\" rel=\"")
-        get_source = x[get_source_start+17:get_source_end]
-        if (get_source.find("https://") > 1) | (get_source.find("http://") > 1):
-            print("\nSomething went wrong..... log:\n***************************************\n"+get_source+"\n************************************\n") 
-        else:
-            print("\n"+get_source)
-            source_list.append(get_source)
-
+        self.make_source_loc(x)
 
         first = x.find("<picture>")
         last = x.find("</picture>",first)
@@ -244,6 +236,19 @@ class main():
         else:
             print(img)
         return img
+
+    def make_source_loc(self,source_raw):
+        global source_list
+        
+        #소스 출력, 이거를 txt로 저장
+        get_source_start = source_raw.find("Source: <a href=\"")
+        get_source_end = source_raw.find("\" rel=\"")
+        get_source = x[get_source_start+17:get_source_end]
+        if (get_source.find("https://") > 1) | (get_source.find("http://") > 1):
+            print("\nSomething went wrong..... log:\n***************************************\n"+get_source+"\n************************************\n") 
+        else:
+            print("\n"+get_source)
+            source_list.append(get_source)
 
     
     def coverturl(self,path):   
