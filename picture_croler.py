@@ -9,7 +9,7 @@ try:
     raw_url = sys.argv[1]
     path = sys.argv[2]
     savename = sys.argv[3]
-    threds = sys.argv[4]
+    thread = sys.argv[4]
 except:
     raw_url = None
     path = None
