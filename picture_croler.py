@@ -1,6 +1,7 @@
 import requests
 import sys
 import os
+import urllib
 import urllib.request as req
 import threading
 import numpy as np
@@ -9,7 +10,7 @@ try:
     raw_url = sys.argv[1]
     path = sys.argv[2]
     savename = sys.argv[3]
-    thread = sys.argv[4]
+    thread = int(sys.argv[4])
 except:
     raw_url = None
     path = None
@@ -68,63 +69,72 @@ gal_headers = [
 
 class main():
 
-    def download(self,path,name,url,axis,num_sync,taskid):
+    def download(self,path,name,url,axis,taskid):
         num = 0 #일러스트 번호
         row = 0 #리스트 열
+        sync_num = 0
 
+        for i in range(0, taskid-1): #병렬 다운로드시 파일 이름 중복되는걸 막기 위한 반복문.
+                sync_num += len(url[i])
+        
         for i in range(len(url[axis])):
-            spath_png = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".png").replace("//" , "/")
-            spath_jpg = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})"+".jpg").replace("//" , "/")
-            spath_none = str(path+"/"+name+"/"+name+f" ({(num_sync*axis)+(num+1)})").replace("//" , "/")
+            spath_png = str(path+"/"+name+"/"+name+f" ({sync_num+(num+1)})"+".png").replace("//" , "/")
+            spath_jpg = str(path+"/"+name+"/"+name+f" ({sync_num+(num+1)})"+".jpg").replace("//" , "/")
+            spath_none = str(path+"/"+name+"/"+name+f" ({sync_num+(num+1)})").replace("//" , "/")
             #이미지 확장자 프리셋
-
-            if "https://cdn.donmai.us" in url[axis][row]:
-                try:
-                    req.urlretrieve(url[axis][row], spath_jpg)
-                    print(f"Downloaded image from task{taskid} : {spath_jpg}")
-                except:
-                    x = url[axis][row].replace(".jpg", ".png")
-                    req.urlretrieve(x, spath_png)
-                    print(f"Downloaded image from task{taskid} : {spath_png}")
-            if "https://i.pximg.net" in url[axis][row]: #픽시브 일러스트 리스트쪽에 문제있음. 고처야함
-                try:
-                    opener = req.build_opener()
-                    opener.addheaders = pixiv_headers
-                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
-                    req.urlretrieve(url[axis][row], spath_jpg)
-                    print(f"Downloaded image from task{taskid} : {spath_jpg}")
-                except:
-                    x = url[axis][row].replace(".jpg", ".png")
-                    opener = req.build_opener()
-                    opener.addheaders = pixiv_headers
-                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
-                    req.urlretrieve(x, spath_png)
-                    print(f"Downloaded image from task{taskid} : {spath_png}")
-            if "https://img3.gelbooru.com/" in url[axis][row]:
-                    opener = req.build_opener()
-                    opener.addheaders = gal_headers
-                    req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
-                    first = url[axis][row].find(".jpg")
+            try:
+                if "https://cdn.donmai.us" in url[axis][row]:
                     try:
                         req.urlretrieve(url[axis][row], spath_jpg)
                         print(f"Downloaded image from task{taskid} : {spath_jpg}")
                     except:
+                        x = url[axis][row].replace(".jpg", ".png")
+                        req.urlretrieve(x, spath_png)
+                        print(f"Downloaded image from task{taskid} : {spath_png}")
+                if "https://i.pximg.net" in url[axis][row]: #픽시브 일러스트 리스트쪽에 문제있음. 고처야함
+                    try:
+                        opener = req.build_opener()
+                        opener.addheaders = pixiv_headers
+                        req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
+                        req.urlretrieve(url[axis][row], spath_jpg)
+                        print(f"Downloaded image from task{taskid} : {spath_jpg}")
+                    except:
+                        x = url[axis][row].replace(".jpg", ".png")
+                        opener = req.build_opener()
+                        opener.addheaders = pixiv_headers
+                        req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
+                        req.urlretrieve(x, spath_png)
+                        print(f"Downloaded image from task{taskid} : {spath_png}")
+                if "https://img3.gelbooru.com/" in url[axis][row]:
+                        opener = req.build_opener()
+                        opener.addheaders = gal_headers
+                        req.install_opener(opener) #헤터추가, 403 Forbidden 우회용.
+                        first = url[axis][row].find(".jpg")
                         try:
-                            url[axis][row] = url[axis][row][0:first]+".jpeg"
-                            req.urlretrieve(url[axis][row], spath_none+".jpeg")
-                            print(f"Downloaded image from task{taskid} : {spath_none}"+".jpeg")
+                            req.urlretrieve(url[axis][row], spath_jpg)
+                            print(f"Downloaded image from task{taskid} : {spath_jpg}")
                         except:
-                            
-                            url[axis][row] = url[axis][row][0:first]+".png"
-                            req.urlretrieve(url[axis][row], spath_none+".png")
-                            print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
-            num = num + 1
-            row += 1
-            #await asyncio.sleep(0.1)
+                            try:
+                                url[axis][row] = url[axis][row][0:first]+".jpeg"
+                                req.urlretrieve(url[axis][row], spath_none+".jpeg")
+                                print(f"Downloaded image from task{taskid} : {spath_none}"+".jpeg")
+                            except:
+
+                                url[axis][row] = url[axis][row][0:first]+".png"
+                                req.urlretrieve(url[axis][row], spath_none+".png")
+                                print(f"Downloaded image from task{taskid} : {spath_none}"+".png")
+                num = num + 1
+                row += 1
+            except req.error.HTTPError as e:
+                print("error in",url[axis][row], "error code\n", e)
+            except:
+                print("error in",url[axis][row])
+        print("thread", taskid, "done")
+    
 
     def sync_download(self,thread):
         global imgurl
-
+        
         #np.array를 사용해서 스레드 수만큼 URL을 나누고, 만약 남는 URL이 있다면 그 URL는 따로 뺴둔 상태로 지정후 뒤에서부터 추가
         if len(imgurl)%thread == 0:
             sync_url = np.array(imgurl).reshape((thread, int(len(imgurl)/thread)))
@@ -138,14 +148,20 @@ class main():
             for i in range(len(temp)):
                 sync_url[thread-(i+1)].append(temp.pop()) #남는 URL 추가.
             
-            #다운로드 시작
-            print("\n\n################ download start! ################")
+        #다운로드 시작
+        print("\n\n################ download start! ################")
 
-            #download_new(self,path,name,url,axis,thread,taskid)
-            task = []
-            for i in range(thread):
-                task.append(threading.Thread(target=self.download, args=(path, savename, sync_url, i, len(sync_url[0]), 0+i)))
-                task[i].start()
+        #download_new(self,path,name,url,axis,taskid,eval)
+        task = []
+        fix_eval = 0
+        dis_eval = False
+        for i in range(thread):
+            if len(sync_url[i])%int(len(imgurl)/thread) == 0 and dis_eval == False:
+                fix_eval += 1
+                dis_eval = True
+            task.append(threading.Thread(target=self.download, args=(path, savename, sync_url, i, 1+i,)))
+            task[i].start()
+                
         
     def getdanimg(self,url):
         r = requests.get(url)
@@ -299,11 +315,6 @@ class main():
             for i in range(len(source_list)):
                 f.write(f"{source_list[i]}\n")
 
-        t = threading.Thread(target=self.sync_download, args=(thread,))
-        t.start()
-        while True:
-            if t.is_alive() == False:
-                print("done!")
-                break
+        self.sync_download(thread)
             
 main()
